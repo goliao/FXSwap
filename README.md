@@ -1,2 +1,1 @@
-# glfxswap
-fxswap calc
+this is a new version of the fxswap calculation 
