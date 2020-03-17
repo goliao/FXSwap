@@ -149,3 +149,46 @@ dton[,.(date,T1,T2,TS1,N0_1,N1_2,NS_1)] %>% unique(by='date') %>% fwrite('JPYDay
 # tickers %>% fwrite('data/bbgtickers.csv')
 # 
 
+
+
+# get asset prices
+* usd libor: ir.usd
+* eur libor: libor.
+* 3m OIS EUR/USD basis swap (negative) = 3m Libor XC basis + 3m EUR FRA-OIS basis - 3m USD FRA-OIS basis
+* 1w IOR EUR/USD basis (positive) = 1w FX basis (positive) - 1w EUR libor-ior + 1w USD Libor-ois
+
+```{r}
+# EUR, JPY avg CIP deviation 
+fmtickers <- c(cipeur1w='dollarbasis.eur1w',
+               liborusd1w='ir.usd1w',
+               liboreur1w='libor.eur1w',
+               ioreur='RICSGO_N.B.EU',
+               oisbasiseur='oisbasis.eur3m.bb',
+               liboroiseur3m='liboroisspread.3m.eu',
+               liboroisusd3m='liboroisspread.3m.us',
+               liborxc.3m='dollarbasis.eur3m.bb'
+               )
+fmpx <- fame2dt(fmtickers,'fm',start=20100101)[!is.na(cipeur1w)] 
+dtior <- fame2dt(c(iorusd='faimtn'),'ifhaver_daily')
+dtr <- merge(fmpx,dtior,by='date')
+dtr[,lxc3m:=-liborxc.3m]
+dtr[,oxc3m:=-oisbasiseur]
+
+dtr[,.(date,lxc3m,oxc3m)] %>% ggplotw()
+dtr[,oxc3mcalc:=lxc3m+liboroisusd3m-liboroiseur3m]
+
+dtr[,.(date,lxc3m,oxc3m,oxc3mcalc)] %>% ggplotw()
+
+
+dtr[,cipioreur1w:=cipeur1w+100*(liborusd1w-iorusd)-100*(liboreur1w-ioreur)]
+
+dtr[,.(date,usdliborior=100*(liborusd1w-iorusd), eurliborior=100*(liboreur1w-ioreur))] %>% ggplotw
+dtr[,.(date,usdeurliborior=100*(liborusd1w-iorusd)-100*(liboreur1w-ioreur))] %>% ggplotw
+
+
+dtr[,.(date,cipeur1w,cipioreur1w)] %>% ggplotw()
+dtr[,.(date,cipioreur1w)] %>% ggplotw()
+dtr %>% lm(cipeur1w~cipioreur1w,data=.) %>% summary()
+
+```
+
