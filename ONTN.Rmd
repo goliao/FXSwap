@@ -1,0 +1,162 @@
+---
+title: "R Notebook"
+output:
+  word_document: default
+  html_notebook: default
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+```{r}
+rm(list=ls())
+#require(policyPlot)
+source('path.txt')
+source('fxcalendarutil.R')
+source(fpglutil)
+cdr <- genfxcdr('data/holidays.csv')
+
+
+```
+
+# import from bbg
+```{r}
+dtraw <- fread('data/ontneurjpy.csv',skip = 1)
+
+dtheader <- fread('data/ontneurjpy.csv',nrows=1) %>% transpose()
+
+i=1
+tmplist <- list()
+for (i in 1:(ncol(dtraw)/2)){
+  j=2*i-1
+  print(i)
+  print(j)
+  tmpdt <- dtraw[,j:(j+1)]
+  colnames(tmpdt) <- c('date','value')
+  tmpdt[,ticker:=dtheader[j]$V1]
+  tmplist[[length(tmplist)+1]] <- tmpdt
+}
+dt <- rbindlist(tmplist)
+dt[,date:=mdy(date)]
+
+dt[,.N,ticker]
+
+dt2 <- rbind(dt,dt[ticker=='EU2D Curncy',.(date,value,ticker='EU3D Curncy')])[!is.na(date)] %>% unique(by=c('ticker','date'))
+
+
+dt3 <- rbind(dt2,dt[ticker=='JY2D Curncy',.(date,value,ticker='JY3D Curncy')])[!is.na(date)] %>% unique(by=c('ticker','date'))
+
+
+dtin=dt2 %>% copy
+ccy='eur'
+src=''
+tickers=c('usso1z curncy','EUSWE1Z Curncy',str_c(c('EUR','EU1D','EU2D','EU3D'),src,' Curncy'))
+
+dt2[,.N,.(date,ticker)][N>1]
+```
+
+```{r}
+
+gen_fximplrate <- function(dtin,src='ICFX',ccy='eur',tickers=''){
+	#' calculate fx implied usd rate and fx basis given a data.table of raw bloomerg prices with the columns: ticker, date, px_mid
+	#' ticker needs to contain preset tickers
+	#' currently uses ior rates in the calculation with boj ior hard coded
+	#' usage: dt <- fread('data/fxrates191125.csv');dt[,date:=ymd(date)]; 
+	#' dtjpy_tmuq <- dt %>% gen_fximplrate('TMUQ',ccy='jpy')
+
+  if(src!=''){ src=str_c(' ',src)}
+  if(ccy=='eur'){
+  	FXSWAPTICS=c('irrbioer index','EECBDEPO Index',str_c(c('EUR','EURON','EURTN','EURSN'),src,' Curncy'))
+	  fwdptfactor=10000
+	} else if (ccy=='jpy'){
+  	FXSWAPTICS=c('irrbioer index','jydr1t curncy',str_c(c('JPY','JPYON','JPYTN','JPYSN'),src,' Curncy'))
+	  fwdptfactor=100
+	} else{
+		warning('incorrect ccy')
+	}
+  if(tickers!='') FXSWAPTICS=tickers
+  FXSWAPCOLNAMES=c('usdior','frnior','spot','fwdptON','fwdptTN','fwdptSN')
+  dtinput <- dtin[ticker %in% FXSWAPTICS] %>% dcast(date~ticker,value.var='value') %>% setnames(FXSWAPTICS,FXSWAPCOLNAMES)
+  
+  # ad hoc jpy modification for jpy IOR rate 
+  if (ccy=='jpy'){
+  	dtinput[,frnior:=.1]
+  	dtinput[date>=ymd(20160129),frnior:=-.1]
+  }
+  # spot date: T2
+  dtinput[,T2:=mapply(getspotsettledt,date,ccy)];dtinput[,T2:=as_date(T2)]
+  # T+1
+  dtinput[,T1:=bizdays::add.bizdays(date,1,cdr[[str_c(ccy,'usd')]])]
+  # T+3/ spot+1
+  dtinput[,TS1:=bizdays::add.bizdays(T2,1,cdr[[str_c(ccy,'usd')]])]
+  
+  # daycount
+  dtinput[,N0_1:=as.numeric(T1-date)]
+  dtinput[,N1_2:=as.numeric(T2-T1)]
+  dtinput[,NS_1:=as.numeric(TS1-T2)]
+  
+  # need to filter out holidays, otherwise it's ugly rates even if they can be calculated on holiday rates
+  if (ccy=='eur'){
+  dtinput[date %ni% cdr$eurusd$holidays,imprateON:=((1+frnior/100*N0_1/360)*(spot-fwdptTN/fwdptfactor)/(spot-fwdptTN/fwdptfactor-fwdptON/fwdptfactor)-1)*100*(360/N0_1)]
+  dtinput[date %ni% cdr$eurusd$holidays & N1_2>0,imprateTN:=((1+frnior/100*N1_2/360)*(spot)/(spot-fwdptTN/fwdptfactor)-1)*100*(360/N1_2)]
+  dtinput[date %ni% cdr$eurusd$holidays,imprateSN:=((1+frnior/100*NS_1/360)/(spot)*(spot+fwdptSN/fwdptfactor)-1)*100*(360/NS_1)]
+  } else if(ccy=='jpy'){
+  dtinput[date %ni% cdr$jpyusd$holidays,imprateON:=((1+frnior/100*N0_1/360)/(spot-fwdptTN/fwdptfactor)*(spot-fwdptTN/fwdptfactor-fwdptON/fwdptfactor)-1)*100*(360/N0_1)]
+  dtinput[date %ni% cdr$eurusd$holidays & N1_2>0,imprateTN:=((1+frnior/100*N1_2/360)/(spot)*(spot-fwdptTN/fwdptfactor)-1)*100*(360/N1_2)]
+  dtinput[date %ni% cdr$eurusd$holidays,imprateSN:=((1+frnior/100*NS_1/360)*(spot)/(spot+fwdptSN/fwdptfactor)-1)*100*(360/NS_1)] 	
+  }
+
+  dtinput[,fxbasisON:=(imprateON-usdior)*100]
+  dtinput[,fxbasisTN:=(imprateTN-usdior)*100]
+  dtinput[,fxbasisSN:=(imprateSN-usdior)*100]
+  
+  dtfximplrate=dtinput[!is.na(fxbasisON)] %>% copy()
+  dtfximplrate
+}
+```
+
+```{r}
+
+dtbasis.eur <- dt2 %>% gen_fximplrate(ccy='eur',src='',tickers=c('usso1z curncy','EUSWE1Z Curncy',str_c(c('EUR','EU1D','EU2D','EU3D'),src,' Curncy'))) 
+
+dtbasis.jpy <- dt3 %>% gen_fximplrate(ccy='jpy',src='',tickers=c('usso1z curncy','JYSO1Z Curncy',str_c(c('JPY','JY1D','JY2D','JY3D'),src,' Curncy'))) 
+
+```
+
+
+```{r}
+dtbasis.eur[,.(date,fxbasisON,fxbasisTN)] %>% gpltw
+
+
+dtbasis.jpy[,.(date,fxbasisON,fxbasisTN)] %>% gpltw
+
+dtbasis <- merge(dtbasis.eur[,.(date,`EUR O/N basis`=fxbasisON)],dtbasis.jpy[,.(date,`JPY O/N basis`=fxbasisON)])
+
+```
+
+```{r}
+dtbasis[jpy_ON>2000]
+dtbasis[date %ni% c(ymd(20161229)) & date>ymd(20110101)] %>% gpltw+theme_classic()+xlab('')+ylab('basis points')+geom_hline(yintercept = 0)+theme(legend.title = element_blank())
+
+```
+
+
+```{r}
+
+
+dtbasis[,quarterend:=((mday(date) %in% c(seq(25,31)) & month(date) %in% c(3,6,9,12)) | mday(date) %in% c(seq(1,5)) & month(date) %in% c(4,7,10,1))]
+
+
+dtbasis[,monthend:=((mday(date) %in% c(seq(24,31))) | mday(date) %in% c(seq(1,5)))]
+
+dtbasis[date %ni% c(ymd(20161229)) & date>ymd(20110101) & quarterend==F,.(date,`EUR O/N basis`,`JPY O/N basis`)] %>% gpltw+theme_classic()+xlab('')+ylab('basis points')+geom_hline(yintercept = 0)+theme(legend.title = element_blank())
+
+
+dtbasis[date %ni% c(ymd(20161229)) & date>ymd(20110101) & monthend==F,.(date,`EUR O/N basis`,`JPY O/N basis`)] %>% gpltw+theme_classic()+xlab('')+ylab('basis points')+geom_hline(yintercept = 0)+theme(legend.title = element_blank())
+
+
+
+dtbasis[date %ni% c(ymd(20161229)) & date>ymd(20110101) & monthend==F,.(date,`EUR O/N basis`,`JPY O/N basis`)][`JPY O/N basis`>400]
+```
+
