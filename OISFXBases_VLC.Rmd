@@ -1,0 +1,238 @@
+---
+title: | 
+  | \Large\textbf{Exhibit X}
+output:
+  pdf_document:
+    latex_engine: lualatex
+    keep_tex: false
+header-includes:
+  - \usepackage{fontspec}
+  - \setmainfont[Path = /if/fame/fm/usr/chang/fonts_rmd/]{arial.ttf}
+  - \pagenumbering{gobble}
+---
+
+
+```{r, include=FALSE, echo = FALSE, message = FALSE, warning = FALSE, results='hide'}
+setwd("/if/fame/fm/usr/chang/gordon/fxswap")
+rm(list=ls())
+require(policyPlot)
+library(stringr)
+#source('path.txt')
+source('fxcalendarutil.R')
+source('mfmabbgutil.R')
+#source('../gllib/glutil.R')
+cdr <- genfxcdr('data/holidays.csv')
+source('fxswaputil.R')
+source('mfmabbgutil.R')
+
+source("/if/appl/R/Functions/IFfunctions.r")
+
+
+```
+
+
+```{r, include=FALSE, echo = FALSE, message = FALSE, warning = FALSE, results='hide'}
+ny <- fame2dt.(list(ois.basis.eur.3m='dollarbasis.ois.eur3m',
+                    ois.basis.jpy.3m='dollarbasis.ois.jpy3m',
+                    ois.basis.eur.1m='dollarbasis.ois.eur1m',
+                    ois.basis.jpy.1m='dollarbasis.ois.jpy1m',
+                    ois.basis.eur.1w='dollarbasis.ois.eur1w',
+                    ois.basis.jpy.1w='dollarbasis.ois.jpy1w'),db = 'fm') %>% melt(id.var='date')
+gmsm <- calc_ois_basis(startdt = '2007-01-01') %>% melt(id.var='date')
+
+
+cc <- merge(ny,gmsm,by=c('date','variable'),suffixes = c('ny','gmsm'),all=T)
+cc[,value:=valueny];cc[is.na(value),value:=valuegmsm]
+
+```
+
+# chart 1
+```{r, include=TRUE, echo = FALSE, message = FALSE, warning = FALSE, results='hide', fig.height=4.5, fig.width=9.5, fig.align='center'}
+theme_if_plot2 <- theme(axis.ticks.length = unit(-0.35, "cm"),
+                        plot.margin = unit(c(1, 1, 1, 1), "cm"),
+                        axis.text = element_text(size = 14),
+                        axis.title = element_text(size = 14, face = 'bold'),
+                        plot.title = element_text(size = 16, hjust = 0),
+                        plot.caption = element_text(size = 14, hjust = 0),
+                        plot.subtitle = element_text(size = 14,  hjust = 0),
+                        axis.text.x = element_text(margin = margin(t = 20), color = "black"),
+                        axis.text.y = element_text(margin = margin(r = 20), color = "black"),
+                        axis.text.y.right = element_text(margin = margin(l = 15)),
+                        axis.line = element_line(size = .5),
+                        axis.ticks = element_line(size = 0.3),
+                        panel.grid.major = element_blank(),
+                        panel.grid.minor = element_blank(),
+                        panel.background = element_blank()
+)
+
+graphdata<-cc[variable %in% c('ois.basis.eur.3m','ois.basis.jpy.3m')]
+
+ggplot()+
+  geom_line(data=graphdata, aes(x=date,y=value,color=variable))+
+  theme_if_plot2+
+  geom_hline(yintercept=0, size=0.4)+
+  scale_y_continuous(expand = c(0,0), 
+                     position = "right", 
+                     sec.axis = dup_axis(labels = NULL), 
+                     limits = c(-50,450), 
+                     breaks = seq(-50,450,100)) +
+  labs(title="3M OIS FX Swap Bases", 
+       subtitle="Basis points", 
+       x = "",
+       y = "",
+      caption="Source: Bloomberg",
+      color="") +
+  scale_color_manual(values = c("ois.basis.eur.3m"="firebrick", 
+                                "ois.basis.jpy.3m"="dodgerblue3"), 
+                     labels = c("ois.basis.eur.3m"="EUR",
+                                "ois.basis.jpy.3m"="JPY"))+
+    theme(legend.position = c(0.75,0.8), 
+        legend.title = element_blank(),  
+        legend.text=element_text(size=10),
+        legend.key=element_blank(),
+        legend.background = element_rect(fill=alpha('white', 0)),
+        legend.key.size = unit(0.5, 'cm'))+
+    scale_x_date(expand = c(0.05,0.05), 
+                 limits = c(min(graphdata$date)-1, max(graphdata$date)) +1, 
+                 date_breaks = "2 year", labels=date_format("%Y"))
+
+#theme(legend.title=element_blank(),legend.position = 'bottom')
+
+```
+
+# chart 2
+```{r, include=TRUE, echo = FALSE, message = FALSE, warning = FALSE, results='hide', fig.height=4.5, fig.width=9.5, fig.align='center'}
+graphdata2<-cc[date>ymd(20190801) & variable %in%c('ois.basis.eur.3m','ois.basis.jpy.3m')]
+
+ggplot()+
+  geom_line(data=graphdata2,(aes(x=date,y=value,color=variable)))+
+  labs(title="3M OIS FX Swap Bases", 
+       subtitle="Basis points", 
+       x = "",
+       y = "",
+      caption="Source: Bloomberg",
+      color="")+
+  theme_if_plot2 +
+  geom_hline(yintercept=0, size=0.4)+
+  scale_y_continuous(expand = c(0,0), 
+                     position = "right", 
+                     sec.axis = dup_axis(labels = NULL), 
+                     limits = c(-50,350), 
+                     breaks = seq(-50,350,100)) +
+    scale_color_manual(values = c("ois.basis.eur.3m"="firebrick", 
+                                "ois.basis.jpy.3m"="dodgerblue3"), 
+                     labels = c("ois.basis.eur.3m"="EUR",
+                                "ois.basis.jpy.3m"="JPY"))+
+    theme(legend.position = c(0.75,0.8), 
+        legend.title = element_blank(),  
+        legend.text=element_text(size=10),
+        legend.key=element_blank(),
+        legend.background = element_rect(fill=alpha('white', 0)),
+        legend.key.size = unit(0.5, 'cm'))+
+    scale_x_date(expand = c(0.05,0.05), 
+                 limits = c(min(graphdata2$date)-1, max(graphdata2$date)) +1, 
+                 date_breaks = "2 month", labels=date_format("%b.")) 
+
+
+```
+
+#chart 3: intraday
+```{r, include=TRUE, echo = FALSE, message = FALSE, warning = FALSE, results='hide', fig.height=4.5, fig.width=9.5, fig.align='center'}
+
+eur<-as.data.table(fread("/if/fame/fm/usr/chang/gordon/fxswap/ois_intraday_eur.csv"))
+colnames(eur) <- c("date","px_last_eur")
+
+jpy<-as.data.table(fread("/if/fame/fm/usr/chang/gordon/fxswap/ois_intraday_jpy.csv"))
+colnames(jpy) <- c("date","px_last_jpy")
+
+eur<-eur[,datetime:=as.POSIXct(date,"%m/%d/%Y %H:%M",tz="America/New_York")]
+jpy<-jpy[,datetime:=as.POSIXct(date,"%m/%d/%Y %H:%M",tz="America/New_York")]
+
+eur<-eur[,date:=NULL]
+jpy<-jpy[,date:=NULL]
+eurjpy_intraday<-merge(x=eur, y=jpy, by="datetime")
+
+ggplot()+ 
+  theme_if_plot2+
+  geom_line(data=eurjpy_intraday, 
+            aes(x=datetime, y=px_last_eur, 
+                color="EUR"))+
+  geom_line(data=eurjpy_intraday,
+            aes(x=datetime,y=px_last_jpy, color="JPY"))+
+  scale_y_continuous(expand = c(0,0), 
+                     position = "right", 
+                     sec.axis = dup_axis(labels = NULL), 
+                     limits = c(-350,150), 
+                     breaks = seq(-350,150,100))+
+  scale_color_manual(values = c("EUR"="firebrick", "JPY"="dodgerblue3"))+
+  labs(title="Intraday Movements in 3M OIS FX Swap Bases", 
+       subtitle="Basis points", 
+       x = "",
+       y = "",
+      caption="Source: Bloomberg",
+      color="")+
+      theme(legend.position = c(0.2,0.8), 
+        legend.title = element_blank(),  
+        legend.text=element_text(size=10),
+        legend.key=element_blank(),
+        legend.background = element_rect(fill=alpha('white', 0)),
+        legend.key.size = unit(0.5, 'cm')) +
+    scale_x_datetime(
+                     expand = c(0.07, 0),
+                     limits = c(min(eurjpy_intraday$datetime),
+                                max(eurjpy_intraday$datetime)), 
+                     breaks= 	seq(as.POSIXct("2020-03-06 00:00:00", tz="Americas/New York"),
+                                  as.POSIXct("2020-03-22 00:00:00", tz="Americas/New York"), "72 hours"),
+                     labels = format(seq(as.POSIXct("2020-03-06 00:00:00", tz="Americas/New York"),
+                                  as.POSIXct("2020-03-22 00:00:00", tz="Americas/New York"), "72 hours"),"%b. %d\n%H:%M"),
+                     )+
+  geom_segment(data=eurjpy_intraday,
+               aes(x = as.POSIXct("2020-03-15 17:00:00", 
+                                  tz="Americas/New York"), 
+                   y = -350, 
+                   xend = as.POSIXct("2020-03-15 17:00:00", tz=
+                                                         "Americas/NewYork"), yend = 25), cex=0.31, linetype = "dashed") +
+    annotate("text",label="Rate Cut/Swap Line\nExtension", x=as.POSIXct("2020-03-15 17:00:00", 
+                                  tz="Americas/New York"), y=70, size=2.8)+
+    geom_segment(data=eurjpy_intraday,
+               aes(x = as.POSIXct("2020-03-17 10:45:00", 
+                                  tz="Americas/New York"), 
+                   y = -350, 
+                   xend = as.POSIXct("2020-03-17 10:45:00", tz="Americas/NewYork"), 
+                   yend = 25), cex=0.32, linetype = "dashed") +
+    annotate("text",label="CPFF", x=as.POSIXct("2020-03-17 10:45:00", 
+                                  tz="Americas/New York"), y=50, size=2.8)+
+    geom_segment(data=eurjpy_intraday,
+               aes(x = as.POSIXct("2020-03-17 18:00:00", 
+                                  tz="Americas/New York"), 
+                   y = -350, 
+                   xend = as.POSIXct("2020-03-17 18:00:00", tz="Americas/NewYork"), 
+                   yend = 60), cex=0.32, linetype = "dashed") +
+    annotate("text",label="PDCF", x=as.POSIXct("2020-03-17 18:00:00", 
+                                  tz="Americas/New York"), y=80, size=2.8)+
+    geom_segment(data=eurjpy_intraday,
+               aes(x = as.POSIXct("2020-03-18 11:30:00", 
+                                  tz="Americas/New York"), 
+                   y = -350, 
+                   xend = as.POSIXct("2020-03-18 11:30:00", tz="Americas/NewYork"), 
+                   yend = 25), cex=0.32, linetype = "dashed") +
+    annotate("text",label="MMLF", x=as.POSIXct("2020-03-18 11:30:00", 
+                                  tz="Americas/New York"), y=50, size=2.8)+
+    geom_segment(data=eurjpy_intraday,
+               aes(x = as.POSIXct("2020-03-19 09:00:00", 
+                                  tz="Americas/New York"), 
+                   y = -350, 
+                   xend = as.POSIXct("2020-03-19 09:00:00", tz="Americas/NewYork"), 
+                   yend = 80), cex=0.32, linetype = "dashed") +
+    annotate("text",label="Swap Line\nExtension", x=as.POSIXct("2020-03-19 09:00:00", 
+                                  tz="Americas/New York"), y=95, size=2.8)+
+    geom_segment(data=eurjpy_intraday,
+               aes(x = as.POSIXct("2020-03-20 10:00:00", 
+                                  tz="Americas/New York"), 
+                   y = -350, 
+                   xend = as.POSIXct("2020-03-20 10:00:00", tz="Americas/NewYork"), 
+                   yend = 25), cex=0.32, linetype = "dashed") +
+    annotate("text",label="Swap Line\nExpansion", x=as.POSIXct("2020-03-20 10:00:00", 
+                                  tz="Americas/New York"), y=105, size=2.8)
+  
+```

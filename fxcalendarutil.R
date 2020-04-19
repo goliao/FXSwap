@@ -27,6 +27,9 @@ genfxcdr=function(fp='/if/udata/m1gyl00/data/fxswap/holidays.csv'){
   
   cdr[['jpyusd']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('JN','FD'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
   
+  cdr[['chf']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('SZ'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
+  cdr[['usd']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('FD'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
+  cdr[['chfusd']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('SZ','FD'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
   # weekly calendar convention
   #' To get 1 week settle date: apply settle date on top of 7 plus days mapply(getspotsettledt,bizdays::add.bizdays(date,7,cdr[['weekly']]),'eur')]
   cdr[['weekly']] <- bizdays::create.calendar('weekly',holidays=ymd(str_c(2000:2032,'0101')),weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
@@ -56,3 +59,18 @@ getspotsettledt <- function(idate,ccystr='eur'){
   z=as_date(max(add.bizdays(idate,2,cdr[[ccystr]]),add.bizdays(idate,1,cdr[['usd']])))
   return(as_date(adjust.next(z,cal=cdr[[paste0(ccystr,'usd')]])))
 }
+
+
+
+
+  addmonth <- function(T2=ymd(20200228),ccy='jpy',n=3){
+  # add month with FX rolback rule
+    #' T2 is SN date; n= number of month; cdr is assumed in the environment
+    #If the spot date falls on the last business day of the month in the currency pair then the delivery date is defined by convention to be the last business day of the target month e.g. assuming all days are business days: if spot is at 30 April, a one-month time to expiry will make the delivery date 31 May. This is described as trading "end-end".
+    if(month(bizdays::add.bizdays(T2,1,cdr[[str_c(ccy,'usd')]]))!=month(T2)){
+      TN=ceiling_date(T2 %m+% months(n),'month') %>% rollback() %>% bizdays::adjust.previous(cdr[[str_c(ccy,'usd')]])
+    } else{
+      TN=bizdays::modified.following(T2 %m+% months(n),cdr[[str_c(ccy,'usd')]])
+    }
+    as_date(TN)
+  }

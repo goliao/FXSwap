@@ -1,0 +1,112 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+
+source('fxswaputil.R')
+
+source('../gllib/glutil.R')
+
+```
+
+
+```{r}
+
+require(Rblpapi)
+
+# chf 3m basis example
+tic <- c('USSOC Curncy','SFSNTC Curncy','CHF3M Curncy','CHF Curncy')
+
+blpConnect()
+dt <- bdh(securities = tic,fields = 'px_last',start.date = ymd(20150101)) %>% rbindlist(use.names = T,idcol = 'ticker') %>% setnames('px_last','value')
+blpDisconnect()
+
+dt <- dt[date<=today()]
+fxbs <- gen.fx.basis(dt,ccy='chf',tickers=tic,term='3m')
+fxbs[,.(date,fxbasis)] %>% gpltw
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# compare
+```{r}
+require(Rblpapi)
+
+# Libor basis example
+tic <- c('US0003M Index','JY0003M Index','JPY3M Curncy','JPY Curncy')
+#tic <- c('US0001W Index','JY0001W Index','JPY1W Curncy','JPY Curncy')
+dt <- downloadbbg(tic,startdt = ymd(20080101),periodstr = 'DAILY' )
+dt %>% setnames('pk','ticker')
+dt <- dt[date<=today()]
+dt[,field:=NULL]
+fxbs <- gen.fx.basis(dt,ccy='jpy',tickers=tic,term='3m')
+fxbs[,.(date,fxbasis)] %>% gpltw
+
+# comparisons with bloomberg cix and traded instrument:
+dt2 <- Rblpapi::bdh('.JPYBS3M Curncy','PX_LAST',start.date='20080101') %>% as.data.table()
+dt2b <- Rblpapi::bdh('JYBSC Curncy','PX_LAST',start.date='20080101') %>% as.data.table()
+
+dt3 <- merge(fxbs[,.(date,calc=-fxbasis)],dt2[,.(date,cix=PX_LAST)],by='date') %>% merge(dt2b[,.(date,traded=PX_LAST)],by='date')
+dt3 %>% gpltw
+dt3 %>% lm(calc~traded,data=.) %>% summary
+dt3 %>% lm(calc~cix,data=.) %>% summary
+dt3 %>% lm(cix~traded,data=.) %>% summary
+
+dt3 %>% tail(20)
+
+fxbs %>% fwrite('tmp.csv')
+
+```
+
+
+```{r}
+settle <- readstata13::read.dta13('data/fx_settlement_dates_update.dta') %>% as.data.table()
+
+
+comp <- merge(fxbs,settle[,.(date,JPY_Curncy,JPY3M_Curncy)],by='date')
+
+comp[,diff:=as.numeric(TSN-JPY3M_Curncy)]
+comp[,diff0:=as.numeric(T2-JPY_Curncy)]
+
+comp[,diff] %>% summary
+
+comp[diff!=0]
+
+# this is incorrect because: If the spot date falls on the last business day of the month in the currency pair then the delivery date is defined by convention to be the last business day of the target month e.g. assuming all days are business days: if spot is at 30 April, a one-month time to expiry will make the delivery date 31 May. This is described as trading "end-end".
+
+
+```
+
+
+```{r}
+settle <- readstata13::read.dta13('data/fx_settlement_dates_update.dta') %>% as.data.table()
+
+
+comp <- merge(fxbs,settle[,.(date,JPY_Curncy,JPY1W_Curncy)],by='date')
+
+comp[,diff:=as.numeric(TSN-JPY1W_Curncy)]
+comp[,diff0:=as.numeric(T2-JPY_Curncy)]
+
+comp[,diff] %>% summary
+
+comp[diff!=0]
+
+```
+

@@ -1,0 +1,65 @@
+---
+title: "Untitled"
+output: pdf
+---
+
+
+```{r}
+
+rm(list=ls())
+require(policyPlot)
+source('path.txt')
+source('fxcalendarutil.R')
+#source('../gllib/glutil.R')
+cdr <- genfxcdr('data/holidays.csv')
+source('fxswaputil.R')
+source('mfmabbgutil.R')
+
+source("/if/appl/R/Functions/IFfunctions.r")
+
+
+```
+
+
+```{r}
+ny <- fame2dt.(list(ois.basis.eur.3m='dollarbasis.ois.eur3m',
+                    ois.basis.jpy.3m='dollarbasis.ois.jpy3m',
+                    ois.basis.eur.1m='dollarbasis.ois.eur1m',
+                    ois.basis.jpy.1m='dollarbasis.ois.jpy1m',
+                    ois.basis.eur.1w='dollarbasis.ois.eur1w',
+                    ois.basis.jpy.1w='dollarbasis.ois.jpy1w'),db = 'fm') %>% melt(id.var='date')
+gmsm <- calc_ois_basis(startdt = '2007-01-01') %>% melt(id.var='date')
+
+
+cc <- merge(ny,gmsm,by=c('date','variable'),suffixes = c('ny','gmsm'),all=T)
+cc[,value:=valueny];cc[is.na(value),value:=valuegmsm]
+
+```
+
+# chart 1
+```{r}
+
+cc[variable %in% c('ois.basis.eur.3m','ois.basis.jpy.3m')] %>% ggplot(aes(x=date,y=value,color=variable))+geom_line()+xlab('')+ylab('Basis Points')+theme_classic()+theme(legend.title=element_blank(),legend.position = 'bottom')
+
+```
+
+# chart 2
+```{r}
+cc[date>ymd(20190801) & variable %in% c('ois.basis.eur.3m','ois.basis.jpy.3m')] %>% ggplot(aes(x=date,y=value,color=variable))+geom_line()+xlab('')+ylab('Basis Points')+theme_classic()+theme(legend.title=element_blank(),legend.position = 'bottom')
+
+```
+
+
+<!-- # chart 1 -->
+<!-- ```{r} -->
+
+<!-- cc[variable %in% c('ois.basis.eur.1w','ois.basis.jpy.1w')] %>% ggplot(aes(x=date,y=value,color=variable))+geom_line()+xlab('')+ylab('Basis Points')+theme_classic()+theme(legend.title=element_blank(),legend.position = 'bottom') -->
+
+<!-- ``` -->
+
+<!-- # chart 2 -->
+<!-- ```{r} -->
+<!-- cc[date>ymd(20190801) & variable %in% c('ois.basis.eur.1w','ois.basis.jpy.1w')] %>% ggplot(aes(x=date,y=value,color=variable))+geom_line()+xlab('')+ylab('Basis Points')+theme_classic()+theme(legend.title=element_blank(),legend.position = 'bottom') -->
+
+<!-- ``` -->
+

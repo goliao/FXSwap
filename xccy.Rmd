@@ -1,0 +1,127 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+
+source('fxswaputil.R')
+
+source('../gllib/glutil.R')
+
+```
+
+```{r}
+require(Rblpapi)
+
+
+```
+
+
+INR IDR TRY COP CNH ZAR PLN HUF MXN RUB KRW TWD
+```{r}
+ticraw <- fread('data/xccytickers.csv')
+
+tic <- ticraw[Term=='1 Year' &!is.na(Spread),.(ccy=Currency, tic=Ticker)]
+
+tic[,pk:=str_c(tic,' Curncy')]
+#tic[,pk:=str_c(str_replace(tic,'1','C'),' Curncy')]
+tic$pk
+
+# blpConnect()
+# dtraw <- bdh(securities = tic$pk,fields = 'px_last',start.date = ymd(20150101)) %>% rbindlist(use.names = T,idcol = 'ticker') %>% setnames('px_last','value')
+# blpDisconnect() 
+
+dtraw <- downloadbbg(tic$pk,startdt = ymd(20070101),periodstr = 'DAILY' )
+#save(dt_xccy,file='xccy1y.RData')
+
+
+```
+
+
+```{r}
+
+#load('xccy1y.RData')
+dt <- dtraw %>% merge(tic,by='pk')
+dt[ccy!='MXN',value:=-value]
+
+```
+
+
+
+```{r}
+
+tic.g5=c('EUR','JPY','CAD','CHF','GBP')
+tic.expanded=c('AUD','BRL','KRW','MXN','SGD','SEK','DKK','NOK','NZD')
+
+tic.emcore=c('AUD','INR','IDR','TRY','COP','CNH','ZAR','PLN','HUF','MXN','RUB','KRW','TWD','EUR','CHF','CAD','GBP','INR','TWD')
+#tic.emcore=c('AUD','IDR','TRY','COP','CNH','ZAR','PLN','HUF','MXN','RUB','KRW','EUR','CHF','CAD','GBP','JPY')
+
+tic.extra <- tic.emcore[tic.emcore %ni% c(tic.g5,tic.expanded)]
+
+dtrecent=dt[date>=ymd(20200221)][order(date,ccy)]
+dtrecent[,chg:=value-.SD[1,value],ccy]
+dtlast <- dtrecent[,.SD[.N],ccy]
+
+#ccy %in% tic.emcore
+dtlast.l=dtlast[ccy %in% tic.g5,.(ccy,  `Change since Feb. 21`=chg,`Last value (1 year Libor FX basis)`=value)] %>% melt(id.var='ccy')
+
+
+figa <- dtlast.l %>% ggplot(aes(x=ccy,y=value,fill=variable))+geom_bar(stat='identity',position=position_dodge())+theme_minimal() + scale_fill_manual(values=c('#999999','#E69F00')) + scale_fill_brewer(palette="Blues")+xlab('')+ylab('Basis points')+theme(legend.title = element_blank(),legend.position = 'none')
+
+dtlast.l=dtlast[ccy %in% tic.expanded,.(ccy,  `Change since Feb. 21`=chg,`Last Price (1Y)`=value)] %>% melt(id.var='ccy')
+figb <- dtlast.l %>% ggplot(aes(x=ccy,y=value,fill=variable))+geom_bar(stat='identity',position=position_dodge())+theme_minimal() + scale_fill_manual(values=c('#999999','#E69F00')) + scale_fill_brewer(palette="Blues")+xlab('')+ylab('Basis points')+theme(legend.title = element_blank(),legend.position = 'bottom')
+
+dtlast.l=dtlast[ccy %in% tic.extra,.(ccy,  `Change since Feb. 21`=chg,`Last Price`=value)] %>% melt(id.var='ccy')
+figc <- dtlast.l %>% ggplot(aes(x=ccy,y=value,fill=variable))+geom_bar(stat='identity',position=position_dodge())+theme_minimal() + scale_fill_manual(values=c('#999999','#E69F00')) + scale_fill_brewer(palette="Blues")+xlab('')+ylab('Basis points')+theme(legend.title = element_blank(),legend.position = 'none')
+
+cowplot::plot_grid(figa,figb,figc,rel_widths = c(.3,.5,.5),nrow=1)
+```
+
+# EM
+```{r}
+
+tic.g5=c('EUR','JPY','CAD','CHF','GBP')
+tic.expanded=c('AUD','BRL','KRW','MXN','SGD','SEK','DKK','NOK','NZD')
+
+tic.emcore=c('AUD','INR','IDR','TRY','COP','CNH','ZAR','PLN','HUF','MXN','RUB','KRW','TWD','EUR','CHF','CAD','GBP')
+
+tic.emcore=c('AUD','IDR','TRY','COP','CNH','ZAR','PLN','HUF','MXN','RUB','KRW','EUR','CHF','CAD','GBP','JPY')
+
+
+dtrecent=dt[date>=ymd(20200221)][order(date,ccy)]
+dtrecent[,chg:=value-.SD[1,value],ccy]
+dtlast <- dtrecent[,.SD[.N],ccy]
+
+#ccy %in% tic.emcore
+dtlast.l=dtlast[ccy %in% tic.emcore,.(ccy,  `Change since Feb. 21`=chg,`Last value (1 year Libor FX basis)`=value)] %>% melt(id.var='ccy')
+
+
+figa <- dtlast.l %>% ggplot(aes(x=ccy,y=value,fill=variable))+geom_bar(stat='identity',position=position_dodge())+theme_minimal() + scale_fill_manual(values=c('#999999','#E69F00')) + scale_fill_brewer(palette="Blues")+xlab('')+ylab('Basis points')+theme(legend.title = element_blank(),legend.position = 'bottom')
+
+dtlast.l=dtlast[ccy %in% c('INR','TWD'),.(ccy,  `Change since Feb. 21`=chg,`Last Price`=value)] %>% melt(id.var='ccy')
+figb <- dtlast.l %>% ggplot(aes(x=ccy,y=value,fill=variable))+geom_bar(stat='identity',position=position_dodge())+theme_minimal() + scale_fill_manual(values=c('#999999','#E69F00')) + scale_fill_brewer(palette="Blues")+xlab('')+ylab('Basis points')+theme(legend.title = element_blank(),legend.position = 'none',)
+
+cowplot::plot_grid(figa,figb,rel_widths = c(.85,.15))
+```
+
+
+
+```{r}
+tic.emcore=c('AUD','INR','IDR','TRY','COP','CNH','ZAR','PLN','HUF','MXN','RUB','KRW','TWD')
+
+dtrecent=dt[date>=ymd(20200221)][order(date,ccy)]
+dtrecent[,chg:=value-.SD[1,value],ccy]
+
+dtlast <- dtrecent[,.SD[.N],ccy]
+
+#ccy %in% tic.emcore
+dtlast.l=dtlast[ccy %in% tic.emcore,.(ccy,  `Change since Feb. 21`=chg,`Last Price`=value)] %>% melt(id.var='ccy')
+
+dtlast.l %>% ggplot(aes(x=ccy,y=value,fill=variable))+geom_bar(stat='identity',position=position_dodge())+theme_minimal() + scale_fill_manual(values=c('#999999','#E69F00')) + scale_fill_brewer(palette="Blues")+xlab('')+ylab('Basis points')+theme(legend.title = element_blank(),legend.position = 'bottom')
+
+```
+```
+
