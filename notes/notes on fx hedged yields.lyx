@@ -1,0 +1,271 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Subsection*
+Currency-hedged yields
+\end_layout
+
+\begin_layout Standard
+In theory, the equilibrium currency-hedged yields across currencies should
+ be about the same (by definition of covered interest rate parity (CIP)
+ using sovereign yields).
+ In practice CIP does not hold for Treasurys and also does not hold for
+ a variety of other rates.
+ We typically measure FX swap basis as a deviation from CIP using Libor
+ swap rates.
+\end_layout
+
+\begin_layout Standard
+What is shown in the hedged sovereign spread chart pack is the treasury
+ basis defined as 
+\begin_inset Formula $\Psi_{treasury}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Psi_{treasurys}=\underbrace{\left(y_{EUR}-y_{USD}\right)}_{\text{yield differential}}+\underbrace{\left(f_{t}-s_{t}\right)}_{\text{forward premium}}
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $y_{EUR}$
+\end_inset
+
+ and 
+\begin_inset Formula $y_{USD}$
+\end_inset
+
+ are local sovereign yields in EUR (Bund) and USD (Treasurys), respectively.
+ 
+\begin_inset Formula $f_{t}$
+\end_inset
+
+ and 
+\begin_inset Formula $s_{t}$
+\end_inset
+
+ are forward and spot (log) exchange rates quoted in dollar per euro.
+ CIP condition holds for treasury yield if 
+\begin_inset Formula $\Psi_{Treasury}=0$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection*
+How does it relate to FX swap basis?
+\end_layout
+
+\begin_layout Standard
+Another way to state the above equation is to add and subtract Libor swap
+ rates in both currencies as follows:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Psi_{treasurys}=\underbrace{\left(\left(y_{EUR}-r_{EUR}\right)-\left(y_{USD}-r_{USD}\right)\right)}_{\text{swap spread differential over respective LIBOR curve}}+\underbrace{\left[r_{EUR}-r_{USD}+\left(f_{t}-s_{t}\right)\right]}_{\text{ LIBOR FX swap basis}}
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $r_{EUR}$
+\end_inset
+
+ and 
+\begin_inset Formula $r_{USD}$
+\end_inset
+
+ are the corresponding LIBOR swap rates.
+ We can, equivalently, change everything to OIS swap rates.
+ 
+\end_layout
+
+\begin_layout Standard
+This means that if 
+\begin_inset Formula $\Psi_{treasrys}$
+\end_inset
+
+ is kept by the force of arbitrage to be relatively small in absolute level
+ (ie.
+ CIP deviation using Treasury yields are not too large), the a tightening
+ of FX swap market funding condition (an increase in the second component
+ to be more positive) necessitates Treasury swap spread in USD to widen
+ relative to EUR (i.e.
+ the first component must become more negative).
+ All of these spreads, of course are deteremined in equilibrum.
+ 
+\end_layout
+
+\begin_layout Subsubsection*
+Maturity mismatch
+\end_layout
+
+\begin_layout Standard
+The 3-month rolling version of the charts just have additional maturity
+ mismatches.
+ For instance, if the treasurys are 10 year but hedge is 3 month then we
+ have the following with superscript representing tenor in years:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\Psi_{treasurys}=\underbrace{\left(\left(y_{EUR}^{(10)}-r_{EUR}^{(0.25)}\right)-\left(y_{USD}^{(10)}-r_{USD}^{(0.25)}\right)\right)}_{\text{swap spread differential over respective LIBOR curve}}+\underbrace{\left[r_{EUR}^{(0.25)}-r_{USD}^{(0.25)}+\left(f_{t}^{(0.25)}-s_{t}\right)\right]}_{\text{ LIBOR FX swap basis}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Then you can see that the relative slop of rate curves also matter.
+\end_layout
+
+\begin_layout Standard
+Many institutions are benchmarked to the maturity mismatched version (actually
+ often using 1 month rolling hedges).
+ But some local regulations also mandate minimum maturity mismatch.
+ For instance, Solvincy II directives for insurance firms in Europe require
+ FX hedge to the full maturtiy.
+ So it is unclear what's the extent of maturity mismatch overall.
+\end_layout
+
+\begin_layout Subsubsection*
+Caveat: Quanto risk
+\end_layout
+
+\begin_layout Standard
+An important caveat is that the currency hedged sovereign spreads also reflect
+ quanto risk that arise from the covariance between soveriegn default and
+ currency depreciation.
+ That is, we would expect the EUR to depreciate a lot of Eurozone countries
+ start to default.
+ In a somewhat counter intuitive way, a postive covariance of debt default
+ and currency depreciation leads to a lower foreign bond yield.
+ This quanto risk might actually be relatively large based on quanto CDS
+ contracts.
+ Therefore, the no arbitrage relationship doesn't have to mean 
+\begin_inset Formula $\Psi=0$
+\end_inset
+
+ under quanto risk.
+\end_layout
+
+\begin_layout Subsubsection*
+How does risky bonds look like?
+\end_layout
+
+\begin_layout Standard
+I have a 
+\begin_inset CommandInset href
+LatexCommand href
+name "paper (forthcoming JFE)"
+target "https://scholar.harvard.edu/files/gliao/files/creditcipliao.pdf"
+literal "false"
+
+\end_inset
+
+ on the corporate basis similarly defined as above.
+ It has become very cheap for firms to borrow with currency hedge in EUR
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename corpbasisupdated.png
+	width 6in
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
