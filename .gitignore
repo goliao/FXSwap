@@ -2,3 +2,11 @@
 .Rhistory
 .RData
 .Ruserdata
+*.docx
+data\
+!meta\*.*
+*.RData
+path.txt
+*.pdf
+newtickerstopull2019*
+*.rds

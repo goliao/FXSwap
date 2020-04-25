@@ -1,25 +1,25 @@
 
 source('fxswaputil.R')
-source('../gllib/glutil.R')
-
+compiler::loadcmp('../gllib/glutil.Rc')
 require(Rblpapi)
-
-#INR IDR TRY COP CNH ZAR PLN HUF MXN RUB KRW TWD
-ticraw <- fread('data/xccytickers.csv')
-tic <- ticraw[Term=='1 Year' &!is.na(Spread),.(ccy=Currency, tic=Ticker)]
-tic[,pk:=str_c(tic,' Curncy')]
-#tic[,pk:=str_c(str_replace(tic,'1','C'),' Curncy')]
-tic$pk
+require(readxl)
+require(fst)
 
 
-dtraw <- downloadbbg(tic$pk,startdt = ymd(20070101),filestr='xccy1y_apr2020.RData',periodstr = 'DAILY' )
+lookup_tickers <- read_excel('meta/lookup_tickers.xlsx',1) %>% as.data.table()
+dtraw <- downloadbbg(lookup_tickers$Ticker,startdt = ymd(20000101),filestr='xccy1y_apr2020_extended.RData',periodstr = 'DAILY' )
 
-dt <- dtraw %>% merge(tic,by='pk')
+dt <- dtraw %>% merge(lookup_tickers,by.x='pk',by.y='Ticker')
+
+
+# dtraw[,.N]
+# dt[,.N]
+dt %>% setnames('Currency','ccy')
 # mxn is quoted with multiplier -1
 dt[ccy!='MXN',value:=-value]
 
 
-saveRDS(dt,file='xccy1y.rds')
+saveRDS(dt,file='data/xccy1yextended.rds')
 
 
 dt %>% head()
