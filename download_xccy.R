@@ -1,6 +1,6 @@
 
-source('fxswaputil.R')
 compiler::loadcmp('../gllib/glutil.Rc')
+source('fxswaputil.R')
 require(Rblpapi)
 require(readxl)
 require(fst)
@@ -18,9 +18,8 @@ dt <- dtraw %>% merge(lookup_tickers,by.x='pk',by.y='Ticker')
 dt %>% setnames('Currency','ccy')
 # mxn is quoted with multiplier -1; do it later
 # dt[ccy=='MXN' & Type=='xccy',value:=-value]
+saveRDS(dt,file='data/xccy1yextendedv2.rds')
 
 
-saveRDS(dt,file='data/xccy1yextended.rds')
-
-
+dt[ccy=='NOK',.(date,value)] %>% gpltw
 dt %>% head()
