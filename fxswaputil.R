@@ -56,7 +56,7 @@ gen.fx.basis <- function(dtin,ccy='eur',tickers=c('US0003M Index','JY0003M Index
   #' tickers is ordinal, USD rate, EUR rate, fwdpt, spot
   #' works for spot next/1w/1m/3m but not on/tn, use gen_fximplrate instead for on/tn
 
-  if(ccy %in% c('eur','chf')){
+  if(ccy %in% c('eur','chf','aud')){
       fwdptfactor=10000
   } else if (ccy=='jpy'){
     fwdptfactor=100

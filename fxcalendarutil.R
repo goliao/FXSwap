@@ -13,23 +13,36 @@ genfxcdr=function(fp='/if/udata/m1gyl00/data/fxswap/holidays.csv'){
   #
   print('TE is Europe; FD is US')
   holidays[,.N,cdrcode] %>% print
-  
+
   holidays %>% setkey(date,cdrcode)
   cdr <- list()
   iccy='ccy'
   cdr[['eur']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('TE'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
-  
   cdr[['usd']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('FD'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
-  
   cdr[['eurusd']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('TE','FD'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
-  
+
   cdr[['jpy']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('JN'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
-  
+
   cdr[['jpyusd']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('JN','FD'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
-  
+
   cdr[['chf']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('SZ'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
   cdr[['usd']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('FD'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
   cdr[['chfusd']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('SZ','FD'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
+
+
+  cdr[['aud']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('AU'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
+  cdr[['usd']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('FD'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
+  cdr[['audusd']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('AU','FD'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
+
+
+  cdr[['gbp']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('GB'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
+  cdr[['usd']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('FD'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
+  cdr[['gbpusd']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('GB','FD'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
+
+  cdr[['cad']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('CA'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
+  cdr[['usd']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('FD'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
+  cdr[['cadusd']] <- bizdays::create.calendar(iccy,holidays = holidays[cdrcode %in% c('CA','FD'),date %>% unique()], weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
+
   # weekly calendar convention
   #' To get 1 week settle date: apply settle date on top of 7 plus days mapply(getspotsettledt,bizdays::add.bizdays(date,7,cdr[['weekly']]),'eur')]
   cdr[['weekly']] <- bizdays::create.calendar('weekly',holidays=ymd(str_c(2000:2032,'0101')),weekdays=c("saturday", "sunday"),adjust.from = "following",adjust.to='following')
@@ -41,7 +54,7 @@ genfxcdr=function(fp='/if/udata/m1gyl00/data/fxswap/holidays.csv'){
 
 getweeksettledt <- function(idate,ccystr='eur'){
   #' calculate week settle datae given horizon date: implements the following: https://en.wikipedia.org/wiki/Foreign_exchange_date_conventions
-  
+
 }
 
 
@@ -53,8 +66,8 @@ getspotsettledt <- function(idate,ccystr='eur'){
   #' testdt[date %between% c(cdr[['usd']]$start.date,cdr[['usd']]$end.date),settledtspot:=mapply(getspotsettledt,date,'eur')]
   #' testdt[,settledtspot:=as_date(settledtspot)]
   #' testdt
-  
-  
+
+
   require(lubridate); require(bizdays)
   z=as_date(max(add.bizdays(idate,2,cdr[[ccystr]]),add.bizdays(idate,1,cdr[['usd']])))
   return(as_date(adjust.next(z,cal=cdr[[paste0(ccystr,'usd')]])))
